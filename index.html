@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Map MakerZZ</title>
+    
+    <!-- source: https://unpkg.com/leaflet@1.0.3/dist/leaflet.css -->
+    <link rel="stylesheet" href="leaflet.css" />
+    <!-- source: https://unpkg.com/leaflet@1.0.3/dist/leaflet.js -->
+    <script src="leaflet.js"></script>
+    <!-- source: https://github.com/Eclipse1979/leaflet-slider -->
+    <link rel="stylesheet" href="leaflet-slider.css" />
+    <script src="leaflet-slider-mod.js"></script>
+    <!-- source: https://github.com/jerroydmoore/leaflet-button -->
+    <script src="L.Control.Button.js"></script>
+    
+    <style>
+    .leaflet-container {
+        background: #eee;
+    }
+    
+    .info, button {
+        padding: 6px 8px;
+        font: 16px Helvetica, Arial, sans-serif;
+        background: #fff;
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        border-radius: 5px;
+    }
+    .info h4 {
+        margin: 0 0 5px;
+        color: #666;
+    }
+    .info h3 {
+        margin: 0 0 5px;
+        color: #333;
+    }
+    
+    .legend i {
+        width: 2vh;
+        height: 4vh;
+        margin-right: 8px;
+        display: inline-block;
+        vertical-align:top;
+    }
+    
+    button.active {
+        background: #ddeedd;
+    }
+    
+    .presetbtn {
+        background-repeat: no-repeat;
+        background-position: center;
+        background-origin: content-box;
+        background-size: contain;
+        border-radius: 20px;
+        clear: none;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .presetheader {
+        padding: 8px 8px;
+        clear: left;
+    }
+    
+    #mapid {
+        height: 97vh;
+        width: 100%;
+    }
+    
+    /* Overwrite leaflet slider css */
+    a.leaflet-control-slider-toggle {
+        width: 140px;
+        padding: 0px 10px;
+    }
+    .leaflet-control-slider.leaflet-control-slider-expanded a.leaflet-control-slider-toggle {
+        display:block;
+        float: right;
+        border-left: 1px solid #CCC;
+    }
+    </style>
+    
+    <!-- Planning area map: var planning_area_geojson 
+        long lat coordinates are required although the projection used, EPSG:3857, uses m.
+        i.e. Use EPSG: 4326 projection.
+    -->
+    <script src="planning_area.geojson" type="text/javascript"></script>
+    <!-- Index database: var index_data 
+        DEBUG headers: OBJECTID, PLN_AREA_N, PLN_AREA_C, Crime, Education, Food, Green Spaces, Healthcare
+    -->
+    <script src="indexdata.json" type="text/javascript"></script>
+    
+    <script type="text/javascript">
+    function color_map(data){
+        if (data === "omitted"){
+            return "#ccc";
+        }
+        var breaks = [0.2, 0.4, 0.6, 0.8, 1];
+        var colors = ["#edf8fb", "#b2e2e2", "#66c2a4", "#2ca25f", "#006d2c"];
+        for (var i=0; i<breaks.length; ++i){
+            if (data<=breaks[i]){
+                return colors[i];
+            }
+        }
+        return "#000000"; // Error value
+    }
+    
+    function calculate_index(properties){
+        if (use_geometric){
+            return calculate_index_geometric(properties);
+        } else {
+            return calculate_index_arithmetic(properties);
+        }
+    }
+    
+    function calculate_index_arithmetic(properties){
+        var data = 0;
+        var totalweight = 0;
+        for (var i=0; i<indices.length; ++i){
+            var index_name = indices[i];
+            var weight = parseFloat(index_weights[index_name]);
+            var index_val = parseFloat(index_data[properties.OBJECTID][index_name]);
+            totalweight += weight;
+            data += index_val*weight ;
+        }
+        return data/totalweight;
+    }
+    
+    function calculate_index_geometric(properties){
+        var data = 1;
+        var totalweight = 0;
+        for (var i=0; i<indices.length; ++i){
+            var index_name = indices[i];
+            var weight = parseFloat(index_weights[index_name]);
+            var index_val = parseFloat(index_data[properties.OBJECTID][index_name]);
+            totalweight += weight;
+            data *= Math.pow(index_val, weight);
+        }
+        return Math.pow(data, 1.0/totalweight);
+    }
+    
+    function style(feature) {
+        var data = index_data[feature.properties.OBJECTID]._index;
+        return {
+            fillColor: color_map(data),
+            weight: 2,
+            opacity: 1,
+            color: '#666666',
+            fillOpacity: 1
+        };
+    }
+    
+    function map_update_style(planning_areas) {
+        var areas = Object.values(index_data);
+        for (var i=0; i<areas.length; ++i){
+            if (is_omitted(areas[i].PLN_AREA_N)){
+                areas[i]._index = "omitted";
+            } else {
+                areas[i]._index = calculate_index(areas[i]);
+            }
+        }
+        if (normalize) {
+            var max = areas[0]._index;
+            for (var i=1; i<areas.length; ++i){
+                if (is_omitted(areas[i].PLN_AREA_N)){ continue; }
+                if (areas[i]._index > max){
+                    max = areas[i]._index
+                }
+            }
+            for (var i=1; i<areas.length; ++i){
+                if (is_omitted(areas[i].PLN_AREA_N)){ continue; }
+                areas[i]._index = areas[i]._index/max;
+            }
+        }
+        planning_areas.setStyle(style);
+    }
+    
+    function is_omitted(PLN_AREA_N){
+        omitted = ["BOON LAY", "CHANGI BAY", "CENTRAL WATER CATCHMENT", "LIM CHU KANG", "MARINA EAST", "MARINA SOUTH", "NORTH-EASTERN ISLANDS", "PAYA LEBAR", "SIMPANG", "STRAITS VIEW", "WESTERN ISLANDS", "PIONEER", "TUAS", "DOWNTOWN CORE", "TENGAH"];
+        for (var i=0; i<omitted.length; ++i){
+            if (omitted[i]===PLN_AREA_N){
+                return true;
+            }
+        }
+        return false
+    }
+    
+    function slider_callback_maker(planning_areas, index_name){
+        return function(value) {
+            index_weights[index_name] = parseFloat(value);
+            map_update_style(planning_areas);
+        }
+    }
+    
+    // Callbacks
+    function onEachFeature(feature, layer) {
+        layer.on({
+            mouseover: highlightFeature,
+            mouseout: resetHighlight,
+        });
+    }
+    
+    function highlightFeature(e) {
+        var layer = e.target;
+        layer.setStyle({
+            weight: 5,
+            color: '#bbbbbb',
+        });
+        // IE, opera and edge have problems doing bringToFront().
+        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+            layer.bringToFront();
+        }
+        info.update(layer.feature.properties);
+    }
+    
+    function resetHighlight(e) {
+        e.target.setStyle({
+            weight: 2,
+            color: '#666666',
+        });
+        info.update();
+    }
+    
+    // Constants and global variables
+    var slider_settings = {
+        position: 'bottomright',
+        size: '250px',
+        max: 1,
+        value: 1,
+        step: 0.2,
+        orientation:'horizontal',
+        minmax: true,
+        syncSlider:true,
+        collapsed:false,
+    }
+    
+    var indices = ["Crime", "Education", "Food", "Green Spaces", "Healthcare"]
+    var index_weights = {} // Global variable for index weights.
+    for (var i=0; i<indices.length; ++i){
+        index_weights[indices[i]] = 1;
+    }
+    
+    var use_geometric = true;
+    var normalize = true;
+    
+    var info = L.control();
+    
+    // Start of main script
+    window.onload = function(){
+        map = L.map('mapid', {
+            center:[1.3521, 103.8198],
+            zoom: 12,
+            zoomSnap: 0.1,
+            //Using fit bounds function instead.
+            //maxBounds: [[1.3521, 103.8198], [1.3521, 103.8198]],
+            maxBoundsViscosity: 1,
+            // Prevent changing of map view.
+            zoomControl: false,
+            boxZoom: false,
+            doubleClickZoom: false,
+            keyboard: false,
+            scrollWheelZoom: false,
+            touchZoom: false,
+            dragging: false,
+        });
+        // Rezoom map to fit Singapore better.
+        map.fitBounds([[1.15, 103.60], [1.49, 104.09]]);
+        
+        // Load the actual map
+        var planning_areas = L.geoJson(planning_area_geojson,
+                                       {"onEachFeature": onEachFeature}
+                                      ).addTo(map);
+        map_update_style(planning_areas);
+        
+        // Create sliders
+        sliders = [];
+        for (var i=indices.length-1; i>=0; --i){
+            var s = L.control.slider(
+                slider_callback_maker(planning_areas, indices[i]),
+                Object.assign({
+                    logo: indices[i],
+                    id: indices[i].split(' ').join('_').toLowerCase(),
+                },slider_settings)
+            ).addTo(map);
+            sliders.push(s);
+        }
+        sliders.reverse(); // Make sliders in correct order.
+        
+        // Setup info box
+        info.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+            this.update();
+            return this._div;
+        };
+        
+        info.update = function (properties) {
+            var text = "<h4>Living Desirability Index</h4>";
+            if (typeof properties === 'undefined' || properties === null) {
+                text += "Hover over a planning area to see details!";
+                this._div.innerHTML = text;
+                return;
+            }
+            // Title Case area name.
+            var area_name = properties.PLN_AREA_N.toLowerCase().split(" ");
+            for (var i = 0; i < area_name.length; ++i) {
+                area_name[i] = area_name[i].charAt(0).toUpperCase() + area_name[i].slice(1); 
+            }
+            area_name = area_name.join(" ");
+            if (is_omitted(properties.PLN_AREA_N)){
+                text += "<h3>" + area_name;
+                text += "<br>Weighted LDI: Omitted</h3>";
+                text += "The population of this planning area is less than 100.";
+                this._div.innerHTML = text;
+                return;
+            }
+            text += "<h3>" + area_name;
+            text += "<br>Weighted LDI: " + index_data[properties.OBJECTID]._index.toFixed(2);
+            if (normalize){
+                text += " (normalized)";
+            }
+            text += "</h3>";
+            for (var i=0; i<indices.length; ++i){
+                var index_name = indices[i];
+                text += index_name + ": "
+                text += parseFloat(index_data[properties.OBJECTID][index_name]).toFixed(2);
+                text += "<br>";
+            }
+            this._div.innerHTML = text;
+        };
+        info.addTo(map);
+        
+        // Setup option buttons
+        // Mean
+        var mean_button = new L.Control.Button('Using Geometric Mean',
+                                               {position:"bottomleft",
+                                                toggleButton:"arith-mean"}
+        );
+        // Start in Geometric mean.
+        L.DomUtil.addClass(mean_button._container, mean_button.options.toggleButton);
+        mean_button.addTo(map);
+        mean_button.on('click', function () {
+            // isToggled() is the previous value of the button.
+            use_geometric = !this.isToggled();
+            if (use_geometric){
+                this._container.innerHTML = 'Using Geometric Mean';
+            } else {
+                this._container.innerHTML = 'Using Arithmetic Mean';
+            }
+            map_update_style(planning_areas);
+        });
+        /* Normalize always on. Button disabled.
+        // Normalize
+        var normalize_button = new L.Control.Button('Normalize LDI',
+                                                    {position:"bottomleft",
+                                                     toggleButton:"active"}
+        );
+        normalize_button.addTo(map);
+        normalize_button.on('click', function () {
+            // isToggled() is the previous value of the button.
+            normalize = !this.isToggled();
+            map_update_style(planning_areas);
+        });
+        */
+        
+        // Preset selectors
+        var presets = [
+            ["Couples" , [1.0, 1.0, 0.2, 0.6, 0.8]],
+            ["Elderly" , [1.0, 0, 0.4, 0.6, 1.0]],
+            ["Foodie" , [0.4, 0, 1.0, 0.2, 0.6]],
+            ["Adventurer" , [0.6, 0.4, 0.4, 1.0, 0.8]]
+        ]
+        function presetmaker(p_weights) {
+            return function () {
+                for (var i=0; i<indices.length; ++i){
+                    sliders[i].slider.value = p_weights[i];
+                    sliders[i]._updateValue();
+                }
+                map_update_style(planning_areas);
+            }
+        }
+        
+        for (var i=0; i<presets.length; ++i){
+            var preset_btn = new L.Control.Button("",
+                                                  {position:"bottomleft"}
+            );
+            L.DomUtil.addClass(preset_btn._container, "presetbtn");
+            console.log(preset_btn._container);
+            preset_btn._container.style.backgroundImage = "url("+presets[i][0]+".png)";
+            preset_btn._container.setAttribute("title",presets[i][0]);
+            preset_btn.on('click', presetmaker(presets[i][1]));
+            preset_btn.addTo(map);
+        }
+        // Leaflet adds controls in reverse order so the header is last
+        var presetHeader = L.control({position: 'bottomleft'});
+        presetHeader.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info presetheader');
+            this._div.innerHTML = "<b>Presets:</b>";
+            return this._div;
+        }
+        presetHeader.addTo(map);
+        
+        // Create legend
+        var legend = L.control({position: 'bottomleft'});
+        legend.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info legend');
+            var breaks = [1, 0.8, 0.6, 0.4, 0.2];
+            text = "<h4>Legend</h4>";
+            text += '<div style="line-height:50%"><br></div>';
+            text += '<div style="line-height:0">';
+            for (var i = 0; i < breaks.length; ++i) {
+                text += '<i style="background:' + color_map(breaks[i]) + '"></i>';
+                text += breaks[i]+"<br>";
+            }
+            text += '<i style="height:0"></i>0</div>';
+            text += '<div style="line-height:50%"><br></div>';
+            this._div.innerHTML = text;
+            return this._div;
+        }
+        legend.addTo(map);
+    }
+    </script>
+</head>
+
+<body>
+    <div id="mapid"></div>
+</body>
+
+</html>
