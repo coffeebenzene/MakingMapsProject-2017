@@ -7,6 +7,8 @@ try:
 except NameError:
     pass
 
+omitted = ("BOON LAY", "CHANGI BAY", "CENTRAL WATER CATCHMENT", "LIM CHU KANG", "MARINA EAST", "MARINA SOUTH", "NORTH-EASTERN ISLANDS", "PAYA LEBAR", "SIMPANG", "STRAITS VIEW", "WESTERN ISLANDS", "PIONEER", "TUAS", "DOWNTOWN CORE", "TENGAH")
+
 filename_master = input("filename master:")
 if not filename_master:
     filename_master = "tempvals.csv"
@@ -26,7 +28,7 @@ while True:
 
     with open(filename_data) as f:
         csv_reader = csv.DictReader(f)
-        join_data = {row[join_col]:row for row in csv_reader}
+        join_data = {row[join_col].strip():row for row in csv_reader}
 
     master_headers = tuple( master_data[0].keys() )
     join_headers = next(iter(join_data.values())).keys()
@@ -36,10 +38,15 @@ while True:
     for row in master_data:
         join_val = row[join_col]
         join_row = join_data.get(join_val)
+            
         if join_row:
+            if join_val in omitted:
+                print("NOTE: OMITTED planning area found: {}".format(join_val))
             for col in join_headers:
                 row[col] = join_row[col]
         else:
+            if join_val not in omitted:
+                print("WARNING! NON OMITTED planning area not found: {}".format(join_val))
             for col in join_headers:
                 row[col] = 0
 

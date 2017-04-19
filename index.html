@@ -356,8 +356,10 @@
             text += "</h3>";
             for (var i=0; i<indices.length; ++i){
                 var index_name = indices[i];
-                text += index_name + ": "
-                text += parseFloat(index_data[properties.OBJECTID][index_name]).toFixed(2);
+                text += index_name + ": Rank ";
+                text += index_data[properties.OBJECTID][index_name+"_rank"];
+                // Below displays the original index.
+                //text += parseFloat(index_data[properties.OBJECTID][index_name]).toFixed(2);
                 text += "<br>";
             }
             this._div.innerHTML = text;
@@ -559,7 +561,7 @@
         </p>
         <p>
             <h4>Crime</h4>
-            Data on the total counts of the top 5 preventable crimes by neighbourhood police centers (NPCs) between 2010 to 2015 in C1 was first matched to the NPC boundaries in C2. Next, a spatial join between the boundary of the NPC and the planning shapefile based on their location. As a result, a data set containing total number of crime in each planning area from 2010 to 2015 was obtained. To eliminate the effects of population size on the indicator, a normalised “crime density” was used was the IV for crime. The IV was calculated in such a way that a value of 1 would represent the lowest crime rate (most desirable) while a 0 would represent the highest crime rate.
+            Data on the total counts of the top 5 preventable crimes by neighbourhood police centers (NPCs) between 2010 to 2015 in C1 was first matched to the NPC boundaries in C2. Next, a spatial join between the boundary of the NPC and the planning shapefile based on their location. As a result, a data set containing total number of crime in each planning area from 2010 to 2015 was obtained. To eliminate the effects of the size of the area on the indicator, a normalised “crime density” was used was the IV for crime. The IV was calculated in such a way that a value of 1 would represent the lowest crime rate (most desirable) while a 0 would represent the highest crime rate.
             <img class="equation" src="Equations/2.png" />
             where
             <img class="equation" src="Equations/3.png" />
