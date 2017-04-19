@@ -421,7 +421,6 @@
                                                   {position:"bottomleft"}
             );
             L.DomUtil.addClass(preset_btn._container, "presetbtn");
-            console.log(preset_btn._container);
             preset_btn._container.style.backgroundImage = "url("+presets[i][0]+".png)";
             preset_btn._container.setAttribute("title",presets[i][0]);
             preset_btn.on('click', presetmaker(presets[i][1]));
