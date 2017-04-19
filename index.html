@@ -15,6 +15,12 @@
     <script src="L.Control.Button.js"></script>
     
     <style>
+    body {
+        width: 90%;
+        margin:auto;
+        font-family: medium-content-sans-serif-font, "Helvetica Neue", sans-serif;
+    }
+    
     .leaflet-container {
         background: #eee;
     }
@@ -66,6 +72,33 @@
     #mapid {
         height: 97vh;
         width: 100%;
+        margin: 0px 0px 2vh 0px;
+    }
+    
+    /* Report part */
+    #report {
+        margin: 3vh 10vw;
+    }
+    
+    table {
+        border-collapse: collapse;
+        border: 1px solid black;
+    }
+
+    th, td {
+        padding: 10px;
+        border: 1px solid black;
+    }
+    
+    .equation {
+        display:block;
+        margin: 10px auto;
+        max-width: 48em;
+    }
+    
+    #mapheader {
+        margin: 10px auto;
+        max-width: 90%;
     }
     
     /* Overwrite leaflet slider css */
@@ -422,6 +455,169 @@
 </head>
 
 <body>
+    <div id="report">
+        <h1>02.221 Making Maps I: Final Project Report</h1>
+        <p>
+            <b>Done by: Team Map MakerZZ</b>
+            <br />
+            Eric Teo Zhi Han (1001526), Jordan Sim (1001510), Justin Tan (1001488), Lam Teng Foong (1001487)
+        </p>
+        <hr/>
+        
+        <h2>1. Motivation and Introduction</h2>
+        <p>
+            Different people have varying definitions of the ideal neighbourhood to live in. With over 55 planning areas in Singapore, it might prove difficult for some people, especially immigrants, to find a suitable neighbourhood to call home. 
+            This project aims to tackle the problem of how to recommend the best place for a particular person to live in based on his or her preferences using on data, both spatial and non-spatial, that is can be found on the internet.
+            The end product of this project is an interactive dashboard that allows the users to discover desirable neighbourhoods in Singapore that they would enjoy living in. 
+        </p>
+        
+        <h2>2. Data Collection and Sources</h2>
+        <p>
+            As there might be numerous factors that people might consider when choosing a neighbourhood to live in, this project would focus on five key factors – crime, education, food, green spaces and healthcare, all of which have data readily available online.
+            <table>
+                <tr>
+                    <th>Factor</th>
+                    <th>Source</th>
+                    <th>S/N</th>
+                    <th>Link</th>
+                </tr>
+                <tr>
+                    <td>General Information</td>
+                    <td>data.gov.sg</td>
+                    <td>I1</td>
+                    <td><a href="https://data.gov.sg/dataset/planning-area-census2010">https://data.gov.sg/dataset/planning-area-census2010</a></td>
+                </tr>
+                <tr>
+                    <td rowspan="2">Crime</td>
+                    <td>data.gov.sg</td>
+                    <td>C1</td>
+                    <td><a href="https://data.gov.sg/dataset/five-preventable-crime-cases-recorded-by-npcs">https://data.gov.sg/dataset/five-preventable-crime-cases-recorded-by-npcs</a></td>
+                </tr>
+                <tr>
+                    <td>data.gov.sg</td>
+                    <td>C2</td>
+                    <td><a href="https://data.gov.sg/dataset/singapore-police-force-npc-boundary">https://data.gov.sg/dataset/singapore-police-force-npc-boundary</a></td>
+                </tr>
+                <tr>
+                    <td>Food</td>
+                    <td>Hungrygowhere.com</td>
+                    <td>F1</td>
+                    <td><a href="http://www.hungrygowhere.com">http://www.hungrygowhere.com</a></td>
+                </tr>
+                <tr>
+                    <td rowspan="3">Education</td>
+                    <td>data.gov.sg</td>
+                    <td>E1</td>
+                    <td><a href="https://data.gov.sg/dataset/list-of-school-addresses">https://data.gov.sg/dataset/list-of-school-addresses</a></td>
+                </tr>
+                <tr>
+                    <td>kiasuparents.com</td>
+                    <td>E2</td>
+                    <td><a href="https://www.kiasuparents.com/kiasu/article/2016-p1-registration-oversubscription-risk/">https://www.kiasuparents.com/kiasu/article/2016-p1-registration-oversubscription-risk/</a></td>
+                </tr>
+                <tr>
+                    <td>salary.sg</td>
+                    <td>E3</td>
+                    <td><a href="http://www.salary.sg/2016/secondary-school-ranking-based-on-cut-off-for-2016-intake/">http://www.salary.sg/2016/secondary-school-ranking-based-on-cut-off-for-2016-intake/</a></td>
+                </tr>
+                <tr>
+                    <td>Green Spaces</td>
+                    <td>Singapore OSM Layers from Lab 1</td>
+                    <td>G1</td>
+                    <td>NIL</td>
+                </tr>
+                <tr>
+                    <td rowspan="3">Education</td>
+                    <td>data.gov.sg</td>
+                    <td>H1</td>
+                    <td><a href="https://data.gov.sg/dataset/chas-clinics">https://data.gov.sg/dataset/chas-clinics</a></td>
+                </tr>
+                <tr>
+                    <td>SingHealth</td>
+                    <td>H2</td>
+                    <td><a href="https://polyclinic.singhealth.com.sg/AboutUs/OurPolyclinics/Pages/home.aspx">https://polyclinic.singhealth.com.sg/AboutUs/OurPolyclinics/Pages/home.aspx</a></td>
+                </tr>
+                <tr>
+                    <td>hospitals.sg</td>
+                    <td>H3</td>
+                    <td><a href="http://www.hospitals.sg/hospitals">http://www.hospitals.sg/hospitals</a></td>
+                </tr>
+            </table>
+        </p>
+        
+        <h2>3. Data Analysis</h2>
+        <p>
+            Taking inspiration from the Human Development Index (HDI), the interactive dashboard would compute a Living Desirability Index (LDI) based on the factors that the user has deemed as important.
+            15 planning areas were omitted as certain areas are not residential and have less than 100 in population.
+        </p>
+        <p>
+            <h3>Step 1: Calculating and Normalising of Individual Indicators</h3>
+            Individual indicators values (IVs) for each factor would be normalised to ratio data from a scale of 0 to 1 using the equation:
+            <img class="equation" src="Equations/1.png" />
+        </p>
+        <p>
+            <h4>Crime</h4>
+            Data on the total counts of the top 5 preventable crimes by neighbourhood police centers (NPCs) between 2010 to 2015 in C1 was first matched to the NPC boundaries in C2. Next, a spatial join between the boundary of the NPC and the planning shapefile based on their location. As a result, a data set containing total number of crime in each planning area from 2010 to 2015 was obtained. To eliminate the effects of population size on the indicator, a normalised “crime density” was used was the IV for crime. The IV was calculated in such a way that a value of 1 would represent the lowest crime rate (most desirable) while a 0 would represent the highest crime rate.
+            <img class="equation" src="Equations/2.png" />
+            where
+            <img class="equation" src="Equations/3.png" />
+        </p>
+        <p>
+            <h4>Food</h4>
+            Using the restaurant database of F1, a search was done for each of the planning areas, with a 4-5 star filter applied to siphon out good eating spots. The number of search results obtained by each planning area was recorded and the IV for food was calculated as shown below.
+            <img class="equation" src="Equations/4.png" />
+        </p>
+        <p>
+            <h4>Education</h4>
+            For the aspect on education, primary and secondary schools were focused on, because it was assumed that for adolescents beyond this age, they would be independent enough to travel longer distances away from the neighbourhood to their educational institution. A non-spatial join was performed on the data on primary (intake number) and secondary (admission cut off point) schools from E2 and E3 onto E1 so each school can be tagged to a planning area based on location. IV for education was calculated as
+            <img class="equation" src="Equations/5.png" />
+            Where
+            <img class="equation" src="Equations/6.png" />
+            and
+            <img class="equation" src="Equations/7.png" />
+        </p>
+        <p>
+            <h4>Green Spaces</h4>
+            A spatial intersection of green spaces (G1) within each neighbourhood was done. The IV for greenspaces was calculated as
+            <img class="equation" src="Equations/8.png" />
+        </p>
+        <p>
+            <h4>Healthcare</h4>
+            This factor takes into account health facilities including clinics, polyclinics and hospitals. Performing geocoding on H2 and H3 while using already available locational data of clinics in H1, the IV for healthcare was calculated as
+            <img class="equation" src="Equations/9.png" />
+        </p>
+        <p>
+            <h3>Step 2: Aggregation of Individual Indicators</h3>
+            The normalised IVs of the desired factors would be aggregated using a weighted geometric mean, with the weight of each factor determined by the user from a value of 0 (non-factor) to 1 (highly important factor), using the equation as shown below.
+            <img class="equation" src="Equations/10.png" />
+            The end result would be a simple and intuitive LDI value that ranges from 0 (least ideal) to 1 (most ideal).
+        </p>
+        
+        <h2>4. Final Product – Interactive LDI Dashboard</h2>
+        <p>
+            The final product is as shown below. It was coded in Javascript using the Leaflet library. The IVs were pre-calculated beforehand and based on the user’s input, the applet recalculates the LDI based on the specified weights, normalises it, and updates the map accordingly.
+        </p>
+        
+        <h2>5. Limitations of the Final Product and Areas for Future Development</h2>
+        <p>
+            The final product is by no means an all-encompassing tool for one to decide which area to live in. There are many other factors such as transportation, housing prices which were not factored into this project that are also key in determining a good place to live in. Ultimately, users must do further research on the areas that have high rankings and make their own conclusions.
+            In the future, more factors can be added to dashboard after extensive data gathering and factors can be further refined as (food factor can be specified to local hawker fare or restaurants). Perhaps a more robust but complex way of geospatial analysis is to set a radius around hexagons to determine the proximity and occurrences/density of the 5 factors in this radius. The relationship between adjacent hexagons could be then studied, which would provide greater “resolution” compared to analysing the planning areas. 
+        </p>
+        
+        <h2>6. Conclusion</h2>
+        <p>
+            In conclusion, the final interactive dashboard from this project is able to serve as a preliminary tool for users to narrow in on planning areas they might enjoy living in. However, more extensive data mining and analysis would be required to increase its accuracy and usefulness beyond just a broad proxy of the liveability of a particular location in Singapore.
+        </p>
+    </div>
+    <br/>
+    <div id="mapheader">
+        <h1>Interactive LDI Map</h1>
+        <p>
+            Use the sliders to adjust the weights for the various indices of the LDI.
+            <br/>
+            Can't think of a weighting? Try the presets at the bottom left to start off with!
+        </p>
+    </div>
     <div id="mapid"></div>
 </body>
 
