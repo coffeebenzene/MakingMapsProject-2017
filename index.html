@@ -14,11 +14,13 @@
     <!-- source: https://github.com/jerroydmoore/leaflet-button -->
     <script src="L.Control.Button.js"></script>
     
+    <!-- Add bootstrap for magically nicer look -->
+    <link rel="stylesheet" href="bootstrap.css" />
+    
     <style>
     body {
         width: 90%;
         margin:auto;
-        font-family: medium-content-sans-serif-font, "Helvetica Neue", sans-serif;
     }
     
     .leaflet-container {
@@ -27,7 +29,7 @@
     
     .info, button {
         padding: 6px 8px;
-        font: 16px Helvetica, Arial, sans-serif;
+        font: 16px; /* Helvetica, Arial, sans-serif;*/
         background: #fff;
         box-shadow: 0 0 15px rgba(0,0,0,0.2);
         border-radius: 5px;
